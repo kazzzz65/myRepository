@@ -1,0 +1,154 @@
+<html>
+<head>
+<title>Ćwiczenie_2_Algorytm_genetyczny_KŁ.ipynb</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #808080;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #6897bb;}
+.ls0 { height: 1px; border-width: 0; color: #4d4d4d; background-color:#4d4d4d}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Ćwiczenie_2_Algorytm_genetyczny_KŁ.ipynb</font>
+</center></td></tr></table>
+<pre><span class="s0">#%% md 
+</span>
+<span class="s1"># Cwiczenie 2 z Uczenia Maszynowego - Zadanie praktyczne - zestaw 7 - Sphere, Akcley, k-point, k-bit; Kazimierz ławida, 233218 : 
+ <hr class="ls0"></span><span class="s0">#%% md 
+</span>
+<span class="s1"># I. Analiza zadania: 
+ <hr class="ls0"></span><span class="s0">#%% md 
+</span><span class="s1">Poszukiwanie minimum globalnego dla dwóch funkcji Sphere i Ackley przy użyciu algorytmu genetycznego w bibliotece pyeasyga z krzyżowaniem k-point i mutacją k-bit. 
+ <hr class="ls0"></span><span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">math </span><span class="s2">as </span><span class="s1">math</span>
+<span class="s2">import </span><span class="s1">random</span>
+<span class="s2">from </span><span class="s1">pyeasyga.pyeasyga </span><span class="s2">import </span><span class="s1">GeneticAlgorithm</span>
+<span class="s2">import </span><span class="s1">matplotlib.pyplot </span><span class="s2">as </span><span class="s1">plt</span>
+<span class="s2">import </span><span class="s1">numpy </span><span class="s2">as </span><span class="s1">np</span>
+
+<hr class="ls0"><span class="s0">#%% 
+</span><span class="s1">x= np.linspace(-</span><span class="s3">2</span><span class="s1">**</span><span class="s3">20</span><span class="s2">,</span><span class="s3">2</span><span class="s1">**</span><span class="s3">20</span><span class="s2">,</span><span class="s1">num=</span><span class="s3">1500</span><span class="s1">)</span>
+<span class="s1">y = x.copy()</span><hr class="ls0"><span class="s0">#%% 
+</span><span class="s1">data = [()]</span>
+<span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">range(len(x)):</span>
+    <span class="s1">data += [(x[i]</span><span class="s2">, </span><span class="s1">y[i])]</span>
+<span class="s1">data.pop(</span><span class="s3">0</span><span class="s1">)</span>
+<span class="s1">ga = GeneticAlgorithm(data)</span>
+<span class="s1">data</span>
+<hr class="ls0"><span class="s0">#%% 
+</span><span class="s1">x1= np.linspace(-</span><span class="s3">5</span><span class="s2">,</span><span class="s3">5</span><span class="s2">,</span><span class="s1">num=</span><span class="s3">1500</span><span class="s1">)</span>
+<span class="s1">y2 = x1.copy()</span>
+<hr class="ls0"><span class="s0">#%% 
+</span><span class="s1">data2 = [()]</span>
+<span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">range(len(x1)):</span>
+    <span class="s1">data2 += [(x1[i]</span><span class="s2">, </span><span class="s1">y2[i])]</span>
+<span class="s1">data2.pop(</span><span class="s3">0</span><span class="s1">)</span>
+<span class="s1">ga = GeneticAlgorithm(data2)</span>
+<span class="s1">data2</span>
+
+<hr class="ls0"><span class="s0">#%% 
+</span>
+<span class="s1">ga = GeneticAlgorithm(data2</span><span class="s2">,</span>
+                               <span class="s1">population_size=</span><span class="s3">100</span><span class="s2">,</span>
+                               <span class="s1">generations=</span><span class="s3">20</span><span class="s2">,</span>
+                               <span class="s1">crossover_probability=</span><span class="s3">0.8</span><span class="s2">,</span>
+                               <span class="s1">mutation_probability=</span><span class="s3">0.05</span><span class="s2">,</span>
+                               <span class="s1">elitism=</span><span class="s2">True,</span>
+                               <span class="s1">maximise_fitness=</span><span class="s2">False</span><span class="s1">)</span>
+
+
+<hr class="ls0"><span class="s0">#%% 
+</span>
+<span class="s2">def </span><span class="s1">create_individual(data):</span>
+    <span class="s2">return </span><span class="s1">[random.randint(</span><span class="s3">0</span><span class="s2">, </span><span class="s3">1</span><span class="s1">) </span><span class="s2">for </span><span class="s1">_ </span><span class="s2">in </span><span class="s1">range(len(data))]</span>
+<span class="s1">ga.create_individual = create_individual</span>
+<hr class="ls0"><span class="s0">#%% md 
+</span><span class="s1">crossover k-point <hr class="ls0"></span><span class="s0">#%% 
+</span>
+<span class="s2">def </span><span class="s1">crossover(parent_1</span><span class="s2">, </span><span class="s1">parent_2):</span>
+    <span class="s1">indexes = random.sample(range(len(parent_1))</span><span class="s2">, </span><span class="s1">k)</span>
+    <span class="s1">indexes.append(</span><span class="s3">0</span><span class="s1">)</span>
+    <span class="s1">indexes.append(len(parent_1))</span>
+    <span class="s1">indexes.sort()</span>
+    <span class="s1">child_1 = ([])</span>
+    <span class="s1">child_2 = ([])</span>
+    <span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">range(k+</span><span class="s3">1</span><span class="s1">):</span>
+        <span class="s2">if </span><span class="s1">i % </span><span class="s3">2</span><span class="s1">==</span><span class="s3">0</span><span class="s1">:</span>
+            <span class="s1">child_1= child_1 + parent_1[indexes[i]:indexes[i+</span><span class="s3">1</span><span class="s1">]]</span>
+            <span class="s1">child_2= child_2 + parent_2[indexes[i]:indexes[i+</span><span class="s3">1</span><span class="s1">]]</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">child_1= child_1 + parent_2[indexes[i]:indexes[i+</span><span class="s3">1</span><span class="s1">]]</span>
+            <span class="s1">child_2= child_2 + parent_1[indexes[i]:indexes[i+</span><span class="s3">1</span><span class="s1">]]</span>
+
+    <span class="s2">return </span><span class="s1">child_1</span><span class="s2">, </span><span class="s1">child_2</span>
+<span class="s1">ga.crossover_function = crossover</span>
+
+
+<hr class="ls0"><span class="s0">#%% md 
+</span>
+<span class="s1">funkcja mutowania k-point <hr class="ls0"></span><span class="s0">#%% 
+</span><span class="s2">def </span><span class="s1">mutate(individual):</span>
+    <span class="s1">indexes = random.sample(range(len(individual))</span><span class="s2">, </span><span class="s1">k)</span>
+    <span class="s1">indexes.sort()</span>
+    <span class="s2">for </span><span class="s1">mutate_index </span><span class="s2">in </span><span class="s1">indexes:</span>
+        <span class="s2">if </span><span class="s1">individual[mutate_index] == </span><span class="s3">0</span><span class="s1">:</span>
+            <span class="s1">individual[mutate_index] = </span><span class="s3">1</span>
+        <span class="s2">else</span><span class="s1">:</span>
+            <span class="s1">individual[mutate_index] = </span><span class="s3">0</span>
+<span class="s1">ga.mutate_function = mutate</span>
+<hr class="ls0"><span class="s0">#%% 
+</span>
+<span class="s2">def </span><span class="s1">selection(population):</span>
+    <span class="s2">return </span><span class="s1">random.choice(population)</span>
+<span class="s1">ga.selection_function = selection</span>
+<hr class="ls0"><span class="s0">#%% md 
+</span><span class="s1">Tworzymy 2 funkcje fitness 
+ <hr class="ls0"></span><span class="s0">#%% 
+</span><span class="s2">def </span><span class="s1">fitness_sphere (individual</span><span class="s2">, </span><span class="s1">data):</span>
+    <span class="s1">fitness = </span><span class="s3">0</span>
+    <span class="s2">for </span><span class="s1">(selected</span><span class="s2">, </span><span class="s1">(a</span><span class="s2">,</span><span class="s1">b)) </span><span class="s2">in </span><span class="s1">zip(individual</span><span class="s2">,</span><span class="s1">data):</span>
+        <span class="s2">if </span><span class="s1">selected:</span>
+            <span class="s1">fitness += a**</span><span class="s3">2 </span><span class="s1">+ b**</span><span class="s3">2 </span><span class="s0">#jeśli element w koszyku</span>
+    <span class="s2">return </span><span class="s1">fitness</span><hr class="ls0"><span class="s0">#%% 
+</span><span class="s2">def </span><span class="s1">fitness_ackley(individual</span><span class="s2">, </span><span class="s1">data):</span>
+    <span class="s1">firstSum = </span><span class="s3">0.0</span>
+    <span class="s1">secondSum = </span><span class="s3">0.0</span>
+    <span class="s2">for </span><span class="s1">(selected</span><span class="s2">, </span><span class="s1">(a</span><span class="s2">,</span><span class="s1">b)) </span><span class="s2">in </span><span class="s1">zip(individual</span><span class="s2">,</span><span class="s1">data):</span>
+        <span class="s2">if </span><span class="s1">selected:</span>
+            <span class="s1">firstSum += a**</span><span class="s3">2.0 </span><span class="s1">+ b**</span><span class="s3">2.0</span>
+            <span class="s1">secondSum += math.cos(</span><span class="s3">2.0</span><span class="s1">*math.pi*a) + math.cos(</span><span class="s3">2.0</span><span class="s1">*math.pi*b)</span>
+    <span class="s1">n = float(len(data))</span>
+    <span class="s1">fitness = -</span><span class="s3">20.0</span><span class="s1">*np.math.exp(-</span><span class="s3">0.2</span><span class="s1">*math.sqrt(firstSum/n)) - math.exp(secondSum/n) + </span><span class="s3">20 </span><span class="s1">+ math.e</span>
+    <span class="s2">return </span><span class="s1">fitness</span>
+<hr class="ls0"><span class="s0">#%% md 
+</span>
+<span class="s1">Uruchamiamy algorytm z k = 10 dla fitness ackley 
+ <hr class="ls0"></span><span class="s0">#%% 
+</span><span class="s1">ga.fitness_function = fitness_ackley</span>
+<span class="s1">k=</span><span class="s3">10</span>
+<span class="s1">ga.run()</span>
+<span class="s1">print(ga.best_individual()[</span><span class="s3">0</span><span class="s1">])</span>
+<hr class="ls0"><span class="s0">#%% md 
+</span><span class="s1">Uruchamiamy algorytm z k = 100 dla fitness sphere 
+ <hr class="ls0"></span><span class="s0">#%% 
+</span>
+<span class="s1">ga = GeneticAlgorithm(data</span><span class="s2">,</span>
+                               <span class="s1">population_size=</span><span class="s3">100</span><span class="s2">,</span>
+                               <span class="s1">generations=</span><span class="s3">20</span><span class="s2">,</span>
+                               <span class="s1">crossover_probability=</span><span class="s3">0.8</span><span class="s2">,</span>
+                               <span class="s1">mutation_probability=</span><span class="s3">0.05</span><span class="s2">,</span>
+                               <span class="s1">elitism=</span><span class="s2">True,</span>
+                               <span class="s1">maximise_fitness=</span><span class="s2">False</span><span class="s1">)</span><hr class="ls0"><span class="s0">#%% 
+</span><span class="s1">ga.fitness_function = fitness_sphere</span>
+<span class="s1">k=</span><span class="s3">100</span>
+<span class="s1">ga.run()</span>
+<span class="s1">print(ga.best_individual()[</span><span class="s3">0</span><span class="s1">])</span>
+
+</pre>
+</body>
+</html>
