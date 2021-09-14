@@ -1,0 +1,517 @@
+---
+title: "Sprawdzenie danych do prognozy przepływów"
+author: "KL"
+date: "12 08 2020"
+output:
+  prettydoc::html_pretty:
+    toc: TRUE
+    theme: tactile
+    highlight: github
+    tables: yes
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```
+
+
+```{r include=FALSE}
+library(leaflet)
+library(data.table)
+library(stringr)
+library(plotly)
+library(fasttime)
+library(dplyr)
+library(prettydoc)
+library(DT)
+library(kableExtra)
+library(pastecs)
+```
+
+
+```{r include=FALSE}
+sciezka <-"C:/Users/kazimierz.lawida/Desktop"
+zbior_treningowy <- fread(paste(sciezka, "/treningowa3.csv", sep = ""), encoding = 'UTF-8')
+zbior_predykcyjny <- fread(paste(sciezka, "/prognostyczna_new.csv", sep = ""), encoding = 'UTF-8')
+
+#city
+zera_w_city_size <- unique(zbior_treningowy[city_size==0, Sklep])
+zera_w_city_size_pred <- unique(zbior_predykcyjny[city_size==0, Sklep])
+
+#MM
+wiecej_linii_niz_sztuk <- unique(zbior_treningowy[linie>mm_quantity, Sklep])
+wiecej_linii_niz_sztuk_daty <- unique(zbior_treningowy[linie>mm_quantity, .(Sklep, Data, linie, mm_quantity)])
+bardzo_male_dostawy <- unique(zbior_treningowy[mm_quantity<10, Sklep])
+zera_w_sztukach_lub_liniach <- unique(zbior_treningowy[mm_quantity<1|linie<1, Sklep])
+zera_w_vol <- unique(zbior_treningowy[mm_vol==0&mm_quantity>10, Sklep])
+
+#outliery MM_quantity z wykresami
+sklepy_outliers <- head(zbior_treningowy[, stdev :=  sd(mm_quantity), by = Sklep][, range := stat.desc(mm_quantity)[6], by=Sklep][, outliers := (range - stdev)/max(mm_quantity), by = Sklep][order(-outliers)][, max(outliers) , by= Sklep][, Sklep],20)
+
+
+zbior_sztuki <- zbior_treningowy[, .(mm_quantity = sum(mm_quantity)), by =c("Sklep", "Data")]
+
+zbior_sztuki_sklep <- zbior_sztuki[Sklep == sklepy_outliers[1]]
+
+wykres_sklep_1 <- plot_ly(data = zbior_sztuki_sklep, x = ~Data) %>%
+  add_lines(y = ~mm_quantity, color = I("firebrick2"), name = "obrót", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("Sztuki outliery sklep: ", sklepy_outliers[1], sep="")
+  )
+
+
+zbior_sztuki_sklep <- zbior_sztuki[Sklep == sklepy_outliers[2]]
+
+wykres_sklep_2 <- plot_ly(data = zbior_sztuki_sklep, x = ~Data) %>%
+  add_lines(y = ~mm_quantity, color = I("firebrick2"), name = "obrót", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("Sztuki outliery sklep: ", sklepy_outliers[2], sep="")
+  )
+
+
+zbior_sztuki_sklep <- zbior_sztuki[Sklep == sklepy_outliers[3]]
+
+wykres_sklep_3 <- plot_ly(data = zbior_sztuki_sklep, x = ~Data) %>%
+  add_lines(y = ~mm_quantity, color = I("firebrick2"), name = "obrót", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("Sztuki outliery sklep: ", sklepy_outliers[3], sep="")
+  )
+
+zbior_sztuki_sklep <- zbior_sztuki[Sklep == sklepy_outliers[4]]
+
+wykres_sklep_4 <- plot_ly(data = zbior_sztuki_sklep, x = ~Data) %>%
+  add_lines(y = ~mm_quantity, color = I("firebrick2"), name = "obrót", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("Sztuki outliery sklep: ", sklepy_outliers[4], sep="")
+  )
+
+
+zbior_sztuki_sklep <- zbior_sztuki[Sklep == sklepy_outliers[5]]
+
+wykres_sklep_5 <- plot_ly(data = zbior_sztuki_sklep, x = ~Data) %>%
+  add_lines(y = ~mm_quantity, color = I("firebrick2"), name = "obrót", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("Sztuki outliery sklep: ", sklepy_outliers[5], sep="")
+  )
+
+## wysoki stosunek sztuk do linii
+
+high_ql_vol_daty <- zbior_treningowy[ql>200& mm_vol>10, .(Sklep, Data, linie, mm_quantity, mm_vol)]
+
+
+```
+
+# **Sztuki i linie - dostawy**
+
+## **Tabela z datami gdy więcej linii niż sztuk**
+
+```{r}
+datatable(wiecej_linii_niz_sztuk_daty, class = 'cell-border stripe', extensions = 'FixedColumns', options = list(pageLength = 10, scrollX = TRUE), width = 700)
+
+```
+
+## **Zera w sztukach lub liniach**
+
+<div align="justify"><p style="text-indent: 7%; ">Lista sklepów z zerami w sztukach lub liniach: `r zera_w_sztukach_lub_liniach`</p></div>
+
+## **Zera w vol**
+
+<div align="justify"><p style="text-indent: 7%; ">Lista sklepów z zerami w vol przy więcej niż 10 sztukach: `r zera_w_vol`</p></div>
+
+## **Outliery - wykresy**
+
+<div align="justify"><p style="text-indent: 7%; ">Lista sklepów z potencjalnymi outlierami na sztukach: `r sklepy_outliers`</p></div>
+<div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_1
+ ```
+ </div>
+ <div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_2
+ ```
+ </div>
+ <div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_3
+ ```
+ </div>
+ <div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_4
+ ```
+ </div>
+ <div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_5
+ ```
+ </div>
+ 
+## **Tabela ze sklepami i datami z wysokim stosunkiem sztuk do linii przy dużej objętości**
+
+```{r}
+datatable(high_ql_vol_daty, class = 'cell-border stripe', extensions = 'FixedColumns', options = list(pageLength = 10, scrollX = TRUE), width = 700)
+
+```
+
+# **City size**
+
+<div align="justify"><p style="text-indent: 7%; ">Lista sklepów w zbiorze treningowym z zerami w city_size: `r zera_w_city_size`, oraz w zbiorze predykcyjnym: `r zera_w_city_size_pred`</p></div>
+
+``` {r include=FALSE}
+#total
+zera_total <- unique(zbior_treningowy[total_obrot_do_nast_dost==0&total_sztuki_do_nast_dost==0&total_obrot_od_ost_dost==0&total_sztuki_od_ost_dost==0, Sklep])
+
+
+sklepy_outliers_total_sztuki <- head(zbior_treningowy[, sztuki := total_sztuki_od_ost_dost+total_sztuki_do_nast_dost][, stdev :=  sd(sztuki), by = Sklep][, range := stat.desc(sztuki)[6], by=Sklep][, outliers := (range - stdev)/max(sztuki), by = Sklep][order(-outliers)][, max(outliers) , by= Sklep][, Sklep],10)
+sklepy_outliers_total_obrot <- head(zbior_treningowy[, obrot := total_obrot_do_nast_dost+total_obrot_od_ost_dost][, stdev :=  sd(obrot), by = Sklep][, range := stat.desc(obrot)[6], by=Sklep][, outliers := (range - stdev)/max(obrot), by = Sklep][order(-outliers)][, max(outliers) , by= Sklep][, Sklep],10)
+
+sklepy_outliers_total <- unique(rbind(sklepy_outliers_total_sztuki, sklepy_outliers_total_obrot))
+
+zbior_sztuki_obrot_sklep <- zbior_treningowy[, .(sztuki = sum(total_sztuki_do_nast_dost+total_sztuki_od_ost_dost), obrot = sum(total_obrot_do_nast_dost+ total_sztuki_od_ost_dost)), by = c("Sklep","Data")]
+
+zbior_sztuki_obrot_sklep1 <- zbior_sztuki_obrot_sklep[`Sklep` ==sklepy_outliers_total[1]]
+
+yaxis2_sklep <- list(
+  overlaying = "y",
+  side = "right",
+  title = "obrót",
+  range = c(min(zbior_sztuki_obrot_sklep1$obrot), max(zbior_sztuki_obrot_sklep1$obrot))
+)
+
+wykres_sklep_1 <- plot_ly(data = zbior_sztuki_obrot_sklep1, x = ~Data) %>%
+  add_lines(y = ~sztuki, color = I("steelblue2"), name = "sztuki") %>%
+  add_lines(y = ~obrot, color = I("firebrick2"), name = "obrót",  yaxis = "y2", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("sztuki i obroty wg dat zbior train, sklep:", sklepy_outliers_total[1], sep=""), yaxis2 = yaxis2_sklep,
+    yaxis=list(range = c(min(zbior_sztuki_obrot_sklep1$sztuki)), max(zbior_sztuki_obrot_sklep1$sztuki)))
+
+zbior_sztuki_obrot_sklep1 <- zbior_sztuki_obrot_sklep[`Sklep` ==sklepy_outliers_total[2]]
+
+yaxis2_sklep <- list(
+  overlaying = "y",
+  side = "right",
+  title = "obrót",
+  range = c(min(zbior_sztuki_obrot_sklep1$obrot), max(zbior_sztuki_obrot_sklep1$obrot))
+)
+
+wykres_sklep_2 <- plot_ly(data = zbior_sztuki_obrot_sklep1, x = ~Data) %>%
+  add_lines(y = ~sztuki, color = I("steelblue2"), name = "sztuki") %>%
+  add_lines(y = ~obrot, color = I("firebrick2"), name = "obrót",  yaxis = "y2", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("sztuki i obroty wg dat zbior train, sklep:", sklepy_outliers_total[2], sep=""), yaxis2 = yaxis2_sklep,
+    yaxis=list(range = c(min(zbior_sztuki_obrot_sklep1$sztuki)), max(zbior_sztuki_obrot_sklep1$sztuki)))
+
+zbior_sztuki_obrot_sklep1 <- zbior_sztuki_obrot_sklep[`Sklep` ==sklepy_outliers_total[3]]
+
+yaxis2_sklep <- list(
+  overlaying = "y",
+  side = "right",
+  title = "obrót",
+  range = c(min(zbior_sztuki_obrot_sklep1$obrot), max(zbior_sztuki_obrot_sklep1$obrot))
+)
+
+wykres_sklep_3 <- plot_ly(data = zbior_sztuki_obrot_sklep1, x = ~Data) %>%
+  add_lines(y = ~sztuki, color = I("steelblue2"), name = "sztuki") %>%
+  add_lines(y = ~obrot, color = I("firebrick2"), name = "obrót",  yaxis = "y2", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("sztuki i obroty wg dat zbior train, sklep:", sklepy_outliers_total[3], sep=""), yaxis2 = yaxis2_sklep,
+    yaxis=list(range = c(min(zbior_sztuki_obrot_sklep1$sztuki)), max(zbior_sztuki_obrot_sklep1$sztuki)))
+
+zbior_sztuki_obrot_sklep1 <- zbior_sztuki_obrot_sklep[`Sklep` ==sklepy_outliers_total[4]]
+
+yaxis2_sklep <- list(
+  overlaying = "y",
+  side = "right",
+  title = "obrót",
+  range = c(min(zbior_sztuki_obrot_sklep1$obrot), max(zbior_sztuki_obrot_sklep1$obrot))
+)
+
+wykres_sklep_4 <- plot_ly(data = zbior_sztuki_obrot_sklep1, x = ~Data) %>%
+  add_lines(y = ~sztuki, color = I("steelblue2"), name = "sztuki") %>%
+  add_lines(y = ~obrot, color = I("firebrick2"), name = "obrót",  yaxis = "y2", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("sztuki i obroty wg dat zbior train, sklep:", sklepy_outliers_total[4], sep=""), yaxis2 = yaxis2_sklep,
+    yaxis=list(range = c(min(zbior_sztuki_obrot_sklep1$sztuki)), max(zbior_sztuki_obrot_sklep1$sztuki)))
+
+zbior_sztuki_obrot_sklep1 <- zbior_sztuki_obrot_sklep[`Sklep` ==sklepy_outliers_total[5]]
+
+yaxis2_sklep <- list(
+  overlaying = "y",
+  side = "right",
+  title = "obrót",
+  range = c(min(zbior_sztuki_obrot_sklep1$obrot), max(zbior_sztuki_obrot_sklep1$obrot))
+)
+
+wykres_sklep_5 <- plot_ly(data = zbior_sztuki_obrot_sklep1, x = ~Data) %>%
+  add_lines(y = ~sztuki, color = I("steelblue2"), name = "sztuki") %>%
+  add_lines(y = ~obrot, color = I("firebrick2"), name = "obrót",  yaxis = "y2", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("sztuki i obroty wg dat zbior train, sklep:", sklepy_outliers_total[5], sep=""), yaxis2 = yaxis2_sklep,
+    yaxis=list(range = c(min(zbior_sztuki_obrot_sklep1$sztuki)), max(zbior_sztuki_obrot_sklep1$sztuki)))
+
+####totalPRED####
+zera_total_pred <- unique(zbior_predykcyjny[total_obrot_do_nast_dost==0&total_sztuki_do_nast_dost==0&total_obrot_od_ost_dost==0&total_sztuki_od_ost_dost==0, Sklep])
+
+
+sklepy_outliers_total_sztuki <- head(zbior_predykcyjny[, sztuki := total_sztuki_od_ost_dost+total_sztuki_do_nast_dost][, stdev :=  sd(sztuki), by = Sklep][, range := stat.desc(sztuki)[6], by=Sklep][, outliers := (range - stdev)/max(sztuki), by = Sklep][order(-outliers)][, max(outliers) , by= Sklep][, Sklep],10)
+sklepy_outliers_total_obrot <- head(zbior_predykcyjny[, obrot := total_obrot_do_nast_dost+total_obrot_od_ost_dost][, stdev :=  sd(obrot), by = Sklep][, range := stat.desc(obrot)[6], by=Sklep][, outliers := (range - stdev)/max(obrot), by = Sklep][order(-outliers)][, max(outliers) , by= Sklep][, Sklep],10)
+
+sklepy_outliers_total_pred <- unique(rbind(sklepy_outliers_total_sztuki, sklepy_outliers_total_obrot))
+
+zbior_sztuki_obrot_sklep <- zbior_predykcyjny[, .(sztuki = sum(total_sztuki_do_nast_dost+total_sztuki_od_ost_dost), obrot = sum(total_obrot_do_nast_dost+ total_sztuki_od_ost_dost)), by = c("Sklep","Data")]
+
+zbior_sztuki_obrot_sklep1 <- zbior_sztuki_obrot_sklep[`Sklep` ==sklepy_outliers_total_pred[1]]
+
+yaxis2_sklep <- list(
+  overlaying = "y",
+  side = "right",
+  title = "obrót",
+  range = c(min(zbior_sztuki_obrot_sklep1$obrot), max(zbior_sztuki_obrot_sklep1$obrot))
+)
+
+wykres_sklep_1_pred <- plot_ly(data = zbior_sztuki_obrot_sklep1, x = ~Data) %>%
+  add_lines(y = ~sztuki, color = I("steelblue2"), name = "sztuki") %>%
+  add_lines(y = ~obrot, color = I("firebrick2"), name = "obrót",  yaxis = "y2", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("sztuki i obroty wg dat zbior train, sklep:", sklepy_outliers_total_pred[1], sep=""), yaxis2 = yaxis2_sklep,
+    yaxis=list(range = c(min(zbior_sztuki_obrot_sklep1$sztuki)), max(zbior_sztuki_obrot_sklep1$sztuki)))
+
+zbior_sztuki_obrot_sklep1 <- zbior_sztuki_obrot_sklep[`Sklep` ==sklepy_outliers_total_pred[2]]
+
+yaxis2_sklep <- list(
+  overlaying = "y",
+  side = "right",
+  title = "obrót",
+  range = c(min(zbior_sztuki_obrot_sklep1$obrot), max(zbior_sztuki_obrot_sklep1$obrot))
+)
+
+wykres_sklep_2_pred <- plot_ly(data = zbior_sztuki_obrot_sklep1, x = ~Data) %>%
+  add_lines(y = ~sztuki, color = I("steelblue2"), name = "sztuki") %>%
+  add_lines(y = ~obrot, color = I("firebrick2"), name = "obrót",  yaxis = "y2", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("sztuki i obroty wg dat zbior train, sklep:", sklepy_outliers_total_pred[2], sep=""), yaxis2 = yaxis2_sklep,
+    yaxis=list(range = c(min(zbior_sztuki_obrot_sklep1$sztuki)), max(zbior_sztuki_obrot_sklep1$sztuki)))
+
+zbior_sztuki_obrot_sklep1 <- zbior_sztuki_obrot_sklep[`Sklep` ==sklepy_outliers_total_pred[3]]
+
+yaxis2_sklep <- list(
+  overlaying = "y",
+  side = "right",
+  title = "obrót",
+  range = c(min(zbior_sztuki_obrot_sklep1$obrot), max(zbior_sztuki_obrot_sklep1$obrot))
+)
+
+wykres_sklep_3_pred <- plot_ly(data = zbior_sztuki_obrot_sklep1, x = ~Data) %>%
+  add_lines(y = ~sztuki, color = I("steelblue2"), name = "sztuki") %>%
+  add_lines(y = ~obrot, color = I("firebrick2"), name = "obrót",  yaxis = "y2", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("sztuki i obroty wg dat zbior train, sklep:", sklepy_outliers_total_pred[3], sep=""), yaxis2 = yaxis2_sklep,
+    yaxis=list(range = c(min(zbior_sztuki_obrot_sklep1$sztuki)), max(zbior_sztuki_obrot_sklep1$sztuki)))
+
+zbior_sztuki_obrot_sklep1 <- zbior_sztuki_obrot_sklep[`Sklep` ==sklepy_outliers_total_pred[4]]
+
+yaxis2_sklep <- list(
+  overlaying = "y",
+  side = "right",
+  title = "obrót",
+  range = c(min(zbior_sztuki_obrot_sklep1$obrot), max(zbior_sztuki_obrot_sklep1$obrot))
+)
+
+wykres_sklep_4_pred <- plot_ly(data = zbior_sztuki_obrot_sklep1, x = ~Data) %>%
+  add_lines(y = ~sztuki, color = I("steelblue2"), name = "sztuki") %>%
+  add_lines(y = ~obrot, color = I("firebrick2"), name = "obrót",  yaxis = "y2", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("sztuki i obroty wg dat zbior train, sklep:", sklepy_outliers_total_pred[4], sep=""), yaxis2 = yaxis2_sklep,
+    yaxis=list(range = c(min(zbior_sztuki_obrot_sklep1$sztuki)), max(zbior_sztuki_obrot_sklep1$sztuki)))
+
+zbior_sztuki_obrot_sklep1 <- zbior_sztuki_obrot_sklep[`Sklep` ==sklepy_outliers_total_pred[5]]
+
+yaxis2_sklep <- list(
+  overlaying = "y",
+  side = "right",
+  title = "obrót",
+  range = c(min(zbior_sztuki_obrot_sklep1$obrot), max(zbior_sztuki_obrot_sklep1$obrot))
+)
+
+wykres_sklep_5_pred <- plot_ly(data = zbior_sztuki_obrot_sklep1, x = ~Data) %>%
+  add_lines(y = ~sztuki, color = I("steelblue2"), name = "sztuki") %>%
+  add_lines(y = ~obrot, color = I("firebrick2"), name = "obrót",  yaxis = "y2", hoverinfo = 'y', opacity=0.3)  %>%
+  layout(
+    title = paste("sztuki i obroty wg dat zbior train, sklep:", sklepy_outliers_total_pred[5], sep=""), yaxis2 = yaxis2_sklep,
+    yaxis=list(range = c(min(zbior_sztuki_obrot_sklep1$sztuki)), max(zbior_sztuki_obrot_sklep1$sztuki)))
+
+
+
+#promo
+zera_promo_art<- unique(zbior_treningowy[promo_art_qnt_do_nast_dost==0&promo_qnt_percentage_do_nast_dost==0&promo_art_qnt_od_ost_dost==0&promo_qnt_percentage_do_nast_dost==0&promo_qnt_percentage_od_ost_dost==0, Sklep])
+zera_promo_art_pred<- unique(zbior_predykcyjny[promo_art_qnt_do_nast_dost==0&promo_qnt_percentage_do_nast_dost==0&promo_art_qnt_od_ost_dost==0&promo_qnt_percentage_do_nast_dost==0&promo_qnt_percentage_od_ost_dost==0, Sklep])
+
+zera_promo_art_daty<- zbior_treningowy[promo_art_qnt_do_nast_dost==0&promo_qnt_percentage_do_nast_dost==0&promo_art_qnt_od_ost_dost==0&promo_qnt_percentage_do_nast_dost==0&promo_qnt_percentage_od_ost_dost==0, .(Sklep, Data)]
+
+zera_promo_art_daty_pred<- zbior_predykcyjny[promo_art_qnt_do_nast_dost==0&promo_qnt_percentage_do_nast_dost==0&promo_art_qnt_od_ost_dost==0&promo_qnt_percentage_do_nast_dost==0&promo_qnt_percentage_od_ost_dost==0, .(Sklep, Data)]
+
+#lokalizacja
+zera_lokalizacja <- unique(zbior_treningowy[`lokalizacja_B. HANDLOWY`==0&`lokalizacja_B. MIESZKALNY`==0&`lokalizacja_B. WOLNOSTOJĄCY`==0
+                                            &lokalizacja_brak_przypisania==0&`lokalizacja_CH (DUŻE)`==0&`lokalizacja_CH (MAŁE)`==0&
+                                              `lokalizacja_DWORZEC PKP`==0&`lokalizacja_DWORZEC PKS`==0, Sklep])
+zera_lokalizacja_pred <- unique(zbior_predykcyjny[`lokalizacja_B. HANDLOWY`==0&`lokalizacja_B. MIESZKALNY`==0&`lokalizacja_B. WOLNOSTOJĄCY`==0
+                                                 &lokalizacja_brak_przypisania==0&`lokalizacja_CH (DUŻE)`==0&`lokalizacja_CH (MAŁE)`==0&
+                                                   `lokalizacja_DWORZEC PKP`==0&`lokalizacja_DWORZEC PKS`==0, Sklep])
+```
+
+
+# **Total**
+
+<div align="justify"><p style="text-indent: 7%; ">Lista sklepów z zerami w kolumnach total: `r zera_total`</p></div>
+
+<div align="justify"><p style="text-indent: 7%; ">Wykresy sklepów(obroty i sztuki) z outlierami w total</p></div>
+
+<div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_1
+ ```
+ </div>
+ <div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_2
+ ```
+ </div>
+ <div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_3
+ ```
+ </div>
+ <div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_4
+ ```
+ </div>
+ <div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_5
+ ```
+ </div>
+ 
+## **Total pred**
+<div align="justify"><p style="text-indent: 7%; ">Lista sklepów z zerami w kolumnach total: `r zera_total_pred`</p></div>
+
+<div align="justify"><p style="text-indent: 7%; ">Wykresy sklepów(obroty i sztuki) z outlierami w total w zbiorze predykcyjnym</p></div>
+
+<div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_1_pred
+ ```
+ </div>
+ <div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_2_pred
+ ```
+ </div>
+ <div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_3_pred
+ ```
+ </div>
+ <div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_4_pred
+ ```
+ </div>
+ <div>
+ <div style = "float:center">
+ ```{r}
+ wykres_sklep_5_pred
+ ```
+ </div>
+ 
+
+# **Promo**
+<div align="justify"><p style="text-indent: 7%; ">Tabela z zerami w kolumnach promo - zbiór treningowy - sklepy i daty</p></div>
+
+```{r}
+datatable(zera_promo_art_daty, class = 'cell-border stripe', extensions = 'FixedColumns', options = list(pageLength = 10, scrollX = TRUE), width = 700)
+
+```
+
+<div align="justify"><p style="text-indent: 7%; ">Tabela z zerami w kolumnach promo - zbiór predykcyjny - sklepy i daty</p></div>
+
+```{r}
+datatable(zera_promo_art_daty_pred, class = 'cell-border stripe', extensions = 'FixedColumns', options = list(pageLength = 10, scrollX = TRUE), width = 700)
+
+```
+
+# **Lokalizacja**
+
+<div align="justify"><p style="text-indent: 7%; ">Lista sklepów z zerami w lokalizacji - zbiór treningowy: `r zera_lokalizacja` i predykcyjny: `r zera_lokalizacja_pred`</p></div>
+
+```{r include=FALSE}
+
+##dni do nast dostawy
+
+zera_w_dni_do <- zbior_treningowy[dni_rob_do_nast_dost==0|is.na(dni_rob_do_nast_dost), .(Sklep, Data)]
+zera_w_dni_od <- zbior_treningowy[dni_rob_od_ost_dost==0|is.na(dni_rob_od_ost_dost), .(Sklep, Data)]
+zera_dni <- merge(zera_w_dni_do, zera_w_dni_od, by= c("Sklep", "Data"))
+
+zera_w_dni_do_pred <- zbior_predykcyjny[dni_rob_do_nast_dost==0|is.na(dni_rob_do_nast_dost), .(Sklep, Data)]
+zera_w_dni_od_pred <- zbior_predykcyjny[dni_rob_od_ost_dost==0|is.na(dni_rob_od_ost_dost), .(Sklep, Data)]
+zera_dni_pred <- merge(zera_w_dni_do_pred, zera_w_dni_od_pred, by= c("Sklep", "Data"))
+
+dluzej_niz_14_bez_dost <- zbior_treningowy[dni_rob_do_nast_dost+dni_rob_od_ost_dost>14, .(Sklep, Data)]
+dluzej_niz_14_bez_dost_pred <- zbior_predykcyjny[dni_rob_do_nast_dost+dni_rob_od_ost_dost>14, .(Sklep, Data)]
+```
+
+# **Dni do i od dostaw**
+
+<div align="justify"><p style="text-indent: 7%; ">Tabela z zerami w dniach do i od dostaw - zbiór treningowy</p></div>
+``` {r}
+datatable(zera_dni, class = 'cell-border stripe', extensions = 'FixedColumns', options = list(pageLength = 10, scrollX = TRUE), width = 700)
+```
+
+<div align="justify"><p style="text-indent: 7%; ">Tabela z zerami w dniach do i od dostaw - zbiór predykcyjny</p></div>
+``` {r}
+datatable(zera_dni_pred, class = 'cell-border stripe', extensions = 'FixedColumns', options = list(pageLength = 10, scrollX = TRUE), width = 700)
+```
+
+<div align="justify"><p style="text-indent: 7%; ">Lista sklepów gdzie brak dostaw dłużej niż 2 tygodnie - zbiór treningowy: `r dluzej_niz_14_bez_dost[, Sklep]`, predykcyjny: `r dluzej_niz_14_bez_dost_pred[, Sklep]`</p></div>
+
+
+```{r include= FALSE}
+Tabela_podsum_tren <- data.table(`Sklep` = zbior_treningowy[, Sklep])
+Tabela_podsum_tren <- Tabela_podsum_tren[Sklep %in% wiecej_linii_niz_sztuk|Sklep %in% zera_w_sztukach_lub_liniach|Sklep %in% zera_w_vol| Sklep %in% sklepy_outliers|Sklep %in% high_ql_vol_daty[, Sklep]|Sklep %in% zera_w_city_size| Sklep %in% zera_total| Sklep %in% zera_promo_art| Sklep %in% zera_lokalizacja|Sklep %in% zera_dni[, Sklep]|Sklep %in% dluzej_niz_14_bez_dost[, Sklep]|Sklep %in% sklepy_outliers_total][, wiecej_linii := ifelse(Sklep %in% wiecej_linii_niz_sztuk,1,0)][, zera_w_szt_lub_lin := ifelse(Sklep %in% zera_w_sztukach_lub_liniach,1,0)][, zera_vol := ifelse(Sklep %in% zera_w_vol,1,0)][, outliers := ifelse(Sklep %in% sklepy_outliers,1,0)][, wysoki_ql_i_vol := ifelse(Sklep %in% high_ql_vol_daty[, Sklep],1,0)][, zera_city_size := ifelse(Sklep %in% zera_w_city_size,1,0)][, zera_promo_art := ifelse(Sklep %in% zera_promo_art,1,0)][, zera_lokalizacja := ifelse(Sklep %in% zera_lokalizacja,1,0)][, zera_dni := ifelse(Sklep %in% zera_dni[, Sklep],1,0)][, dluzej_niz_14_bez_dost := ifelse(Sklep %in% dluzej_niz_14_bez_dost[, Sklep],1,0)][, outliers_total := ifelse(Sklep %in% sklepy_outliers_total,1,0)]
+Tabela_podsum_tren = unique(Tabela_podsum_tren)
+
+Tabela_podsum_pred <- data.table(`Sklep` = zbior_predykcyjny[, Sklep])
+Tabela_podsum_pred <- Tabela_podsum_pred[Sklep %in% zera_promo_art_pred|Sklep %in% zera_lokalizacja_pred|Sklep %in% zera_w_city_size_pred|Sklep %in% zera_dni_pred[, Sklep]|Sklep %in% dluzej_niz_14_bez_dost_pred[, Sklep]|Sklep %in% sklepy_outliers_total_pred][, zera_prom := ifelse(Sklep %in% zera_promo_art_pred,1,0)][, zera_lokalizacja := ifelse(Sklep %in% zera_lokalizacja_pred,1,0)][, zera_city_size := ifelse(Sklep %in% zera_w_city_size_pred,1,0)][, zera_dni := ifelse(Sklep %in% zera_dni_pred[, Sklep],1,0)][, dluzej_niz_14_bez_dost := ifelse(Sklep %in% dluzej_niz_14_bez_dost_pred[, Sklep],1,0)][, outliers_total := ifelse(Sklep %in% sklepy_outliers_total_pred,1,0)]
+Tabela_podsum_pred = unique(Tabela_podsum_pred)
+
+```
+
+# **Podsumowanie**
+
+<div align="justify"><p style="text-indent: 7%; ">Tabela podsumowująca dla zbioru treningowego`</p></div>
+
+```{r}
+datatable(Tabela_podsum_tren, class = 'cell-border stripe', extensions = 'FixedColumns', options = list(pageLength = 10, scrollX = TRUE), width = 1000)
+
+```
+
+<div align="justify"><p style="text-indent: 7%; ">Tabela podsumowująca dla zbioru predykcyjnego`</p></div>
+
+```{r}
+datatable(Tabela_podsum_pred, class = 'cell-border stripe', extensions = 'FixedColumns', options = list(pageLength = 10, scrollX = TRUE), width = 700)
+
+```
